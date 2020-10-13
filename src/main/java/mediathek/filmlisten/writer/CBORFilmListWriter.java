@@ -25,8 +25,6 @@ public class CBORFilmListWriter {
 
     private static final Logger logger = LogManager.getLogger(CBORFilmListWriter.class);
     private static final String TAG_JSON_LIST = "X";
-    private String sender = "";
-    private String thema = "";
     //private final CBORFactory factory = new CBORFactory();
     private final JsonFactory factory = new JsonFactory();
 
@@ -57,9 +55,6 @@ public class CBORFilmListWriter {
         try {
             logger.info("Filme schreiben ({} Filme) :", listeFilme.size());
             logger.info("   --> Start Schreiben nach: {}", datei);
-
-            sender = "";
-            thema = "";
 
             //Check if Cache directory exists on OSX
             if (SystemUtils.IS_OS_MAC_OSX) {
@@ -117,9 +112,9 @@ public class CBORFilmListWriter {
     private void writeEntry(DatenFilm entry, JsonGenerator jg) throws IOException {
         jg.writeArrayFieldStart(TAG_JSON_LIST);
 
-        writeSender(jg, entry);
-        writeThema(jg, entry);
-        writeTitel(jg, entry);
+        jg.writeString(entry.getSender());
+        jg.writeString(entry.getThema());
+        jg.writeString(entry.getTitle());
         jg.writeString(entry.getSendeDatum());
         writeZeit(jg, entry);
 
@@ -152,30 +147,6 @@ public class CBORFilmListWriter {
         jg.writeBoolean(entry.isNew());
 
         jg.writeEndArray();
-    }
-
-    private void writeTitel(JsonGenerator jg, DatenFilm datenFilm) throws IOException {
-        jg.writeString(datenFilm.getTitle());
-    }
-
-    private void writeSender(JsonGenerator jg, DatenFilm datenFilm) throws IOException {
-        String tempSender = datenFilm.getSender();
-
-        if (tempSender.equals(sender)) {
-            jg.writeString("");
-        } else {
-            sender = tempSender;
-            jg.writeString(tempSender);
-        }
-    }
-
-    private void writeThema(JsonGenerator jg, DatenFilm datenFilm) throws IOException {
-        if (datenFilm.getThema().equals(thema)) {
-            jg.writeString("");
-        } else {
-            thema = datenFilm.getThema();
-            jg.writeString(datenFilm.getThema());
-        }
     }
 
     private void writeZeit(JsonGenerator jg, DatenFilm datenFilm) throws IOException {
