@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import mediathek.config.Daten;
 import mediathek.daten.DatenFilm;
+import mediathek.daten.FilmResolution;
 import mediathek.daten.ListeFilme;
 import mediathek.gui.messages.FilmListWriteStartEvent;
 import mediathek.gui.messages.FilmListWriteStopEvent;
@@ -24,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 public class CBORFilmListWriter {
 
     private static final Logger logger = LogManager.getLogger(CBORFilmListWriter.class);
-    private static final String TAG_JSON_LIST = "X";
     //private final CBORFactory factory = new CBORFactory();
     private final JsonFactory factory = new JsonFactory();
 
@@ -110,43 +110,43 @@ public class CBORFilmListWriter {
     private static final long EMPTY_VALUE = Long.MAX_VALUE;
 
     private void writeEntry(DatenFilm entry, JsonGenerator jg) throws IOException {
-        jg.writeArrayFieldStart(TAG_JSON_LIST);
+        jg.writeObjectFieldStart("film");
 
-        jg.writeString(entry.getSender());
-        jg.writeString(entry.getThema());
-        jg.writeString(entry.getTitle());
-        jg.writeString(entry.getSendeDatum());
+        jg.writeStringField("sender", entry.getSender());
+        jg.writeStringField("thema", entry.getThema());
+        jg.writeStringField("title", entry.getTitle());
+        jg.writeStringField("date", entry.getSendeDatum());
         writeZeit(jg, entry);
 
         var dauer = entry.getDauer();
+        long duration = EMPTY_VALUE;
         if (!dauer.isEmpty())
-            jg.writeNumber(entry.getDuration());
-        else
-            jg.writeNumber(EMPTY_VALUE);
+            duration = entry.getDuration();
+        jg.writeNumberField("duration", duration);
 
         var size = entry.getSize();
         long sizel = EMPTY_VALUE;
         if (!size.isEmpty())
             sizel = Long.parseLong(size);
-        jg.writeNumber(sizel);
+        jg.writeNumberField("size", sizel);
 
-        jg.writeString(entry.getDescription());
-        jg.writeString(entry.getUrl());
-        jg.writeString(entry.getWebsiteLink());
-        jg.writeString(entry.getUrlSubtitle());
-        jg.writeString(entry.getUrlKlein());
-        jg.writeString(entry.getHighQualityUrl());
+        jg.writeStringField("description", entry.getDescription());
+        jg.writeStringField("website", entry.getWebsiteLink());
+        jg.writeStringField("url_subtitle", entry.getUrlSubtitle());
+        jg.writeStringField("url", entry.getUrl());
+        jg.writeStringField("url_klein", entry.getUrlFuerAufloesung(FilmResolution.AUFLOESUNG_KLEIN));
+        jg.writeStringField("url_hq", entry.getUrlFuerAufloesung(FilmResolution.AUFLOESUNG_HD));
 
         var datum = entry.getDatumLong();
         long datuml = EMPTY_VALUE;
         if (!datum.isEmpty())
             datuml = Long.parseLong(datum);
-        jg.writeNumber(datuml);
+        jg.writeNumberField("datum_long", datuml);
 
-        jg.writeString(entry.getGeo().orElse(""));
-        jg.writeBoolean(entry.isNew());
+        jg.writeStringField("geo", entry.getGeo().orElse(""));
+        jg.writeBooleanField("new", entry.isNew());
 
-        jg.writeEndArray();
+        jg.writeEndObject();
     }
 
     private void writeZeit(JsonGenerator jg, DatenFilm datenFilm) throws IOException {
@@ -154,10 +154,10 @@ public class CBORFilmListWriter {
         final int len = strZeit.length();
 
         if (strZeit.isEmpty() || len < 8)
-            jg.writeString("");
+            jg.writeStringField("time","");
         else {
             strZeit = strZeit.substring(0, len - 3);
-            jg.writeString(strZeit);
+            jg.writeStringField("time", strZeit);
         }
     }
 
