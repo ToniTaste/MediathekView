@@ -1,8 +1,8 @@
 package mediathek.filmlisten.writer;
 
 import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import mediathek.config.Daten;
 import mediathek.daten.DatenFilm;
 import mediathek.daten.ListeFilme;
@@ -27,7 +27,8 @@ public class CBORFilmListWriter {
     private static final String TAG_JSON_LIST = "X";
     private String sender = "";
     private String thema = "";
-    private final CBORFactory factory = new CBORFactory();
+    //private final CBORFactory factory = new CBORFactory();
+    private final JsonFactory factory = new JsonFactory();
 
     private void checkOsxCacheDirectory() {
         final Path filePath = Paths.get(System.getProperty("user.home") + File.separator + "Library/Caches/MediathekView");
@@ -43,11 +44,11 @@ public class CBORFilmListWriter {
     private void writeFormatHeader(JsonGenerator jg, ListeFilme listeFilme) throws IOException {
         final var meta = listeFilme.metaData();
 
-        jg.writeArrayFieldStart("MetaData");
-        jg.writeNumber(meta.getVersion());
-        jg.writeBinary(meta.getId().getBytes());
-        jg.writeString(meta.getDatum());
-        jg.writeEndArray();
+        jg.writeObjectFieldStart("mtdt");
+        jg.writeNumberField("version", Integer.parseInt(meta.getVersion()));
+        jg.writeBinaryField("id", meta.getId().getBytes());
+        jg.writeStringField("created", meta.getDatum());
+        jg.writeEndObject();
     }
 
     public void writeFilmList(String datei, ListeFilme listeFilme, IProgressListener listener) {
@@ -79,6 +80,7 @@ public class CBORFilmListWriter {
                  BufferedOutputStream bos = new BufferedOutputStream(fos, 64 * 1024);
                  JsonGenerator jg = factory.createGenerator(bos, JsonEncoding.UTF8)) {
 
+                jg.useDefaultPrettyPrinter();
                 jg.writeStartObject();
 
                 writeFormatHeader(jg, listeFilme);
@@ -150,10 +152,6 @@ public class CBORFilmListWriter {
         jg.writeBoolean(entry.isNew());
 
         jg.writeEndArray();
-    }
-
-    private void skipEntry(JsonGenerator jg) throws IOException {
-        jg.writeString("");
     }
 
     private void writeTitel(JsonGenerator jg, DatenFilm datenFilm) throws IOException {
