@@ -2,6 +2,7 @@ package mediathek.gui.actions;
 
 import javafx.concurrent.Task;
 import mediathek.config.Daten;
+import mediathek.filmlisten.writer.CBORFilmListWriter;
 import mediathek.filmlisten.writer.FilmListWriter;
 
 public class FilmListWriteWorkerTask extends Task<Void> {
@@ -19,6 +20,13 @@ public class FilmListWriteWorkerTask extends Task<Void> {
         updateMessage("Schreibe Filmliste");
         updateProgress(0d, 1d);
         writer.writeFilmList(Daten.getDateiFilmliste(),
+                daten.getListeFilme(),
+                prog -> updateProgress(prog, 1d));
+
+        CBORFilmListWriter cbor = new CBORFilmListWriter();
+        updateMessage("Schreibe CBOR Filmliste");
+        updateProgress(0d, 1d);
+        cbor.writeFilmList("/Users/christianfranzke/Desktop/filme.cbor",
                 daten.getListeFilme(),
                 prog -> updateProgress(prog, 1d));
 
