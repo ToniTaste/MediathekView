@@ -17,9 +17,11 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class CBORFilmListWriter {
@@ -109,9 +111,17 @@ public class CBORFilmListWriter {
 
     private static final long EMPTY_VALUE = Long.MAX_VALUE;
 
+    private static byte[] getBytesFromUUID(UUID uuid) {
+        ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+        bb.putLong(uuid.getMostSignificantBits());
+        bb.putLong(uuid.getLeastSignificantBits());
+
+        return bb.array();
+    }
     private void writeEntry(DatenFilm entry, JsonGenerator jg) throws IOException {
         jg.writeObjectFieldStart("film");
 
+        jg.writeBinaryField("uuid", getBytesFromUUID(UUID.randomUUID()));
         jg.writeStringField("sender", entry.getSender());
         jg.writeStringField("thema", entry.getThema());
         jg.writeStringField("title", entry.getTitle());
