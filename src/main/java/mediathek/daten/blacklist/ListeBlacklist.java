@@ -235,7 +235,7 @@ public class ListeBlacklist extends LinkedList<BlacklistRule> {
      */
     private void loadCurrentFilterSettings() {
         try {
-            final String val = MediathekGui.ui().tabFilme.fap.zeitraumProperty.getValue();
+            final String val = MediathekGui.ui().tabFilme.filmActionPanel.zeitraumProperty.getValue();
             if (val.equals(ZeitraumSpinner.UNLIMITED_VALUE))
                 days_lower_boundary = 0;
             else {

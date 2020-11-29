@@ -82,8 +82,8 @@ public class FilmActionPanel {
 
   private FXFilmToolBar toolBar;
   private CommonViewSettingsPane viewSettingsPane;
-  private boolean senderLoading = false;
   private boolean themaLoading = false;
+  private boolean senderLoading = false;
 
   public FilmActionPanel(Daten daten) {
     this.daten = daten;
@@ -208,7 +208,14 @@ public class FilmActionPanel {
     dontShowAudioVersions = viewSettingsPane.cbDontShowAudioVersions.selectedProperty();
 
     senderList = viewSettingsPane.senderBoxNode.senderBox;
-    viewSettingsPane.senderBoxNode.pauseTransition.setOnFinished(e -> updateThemaBox());
+    senderList
+        .getItems()
+        .addListener(
+            (ListChangeListener<? super String>) listChangeListener -> loadSavedSenderChecks());
+    senderList
+        .getCheckModel()
+        .getCheckedItems()
+        .addListener((ListChangeListener<? super String>) listChangeListener -> updateThemaBox());
 
     themaBox = viewSettingsPane.themaComboBox;
     themaSuggestionProvider = SuggestionProvider.create(themaBox.getItems());
@@ -220,18 +227,16 @@ public class FilmActionPanel {
   }
 
   private void loadSavedSenderChecks() {
-    LOG.info("Loading the saved senders...");
     senderLoading = true;
     IndexedCheckModel<String> senderCheckModel = senderList.getCheckModel();
     List<String> loadedSender = filterConfig.getSender();
     senderCheckModel.clearChecks();
     loadedSender.forEach(senderCheckModel::check);
+    updateThemaBox();
     senderLoading = false;
-    loadSavedThema();
   }
 
   private void loadSavedThema() {
-    LOG.info("Loading the saved thema...");
     themaBox.getSelectionModel().select(filterConfig.getThema());
   }
 
@@ -249,7 +254,7 @@ public class FilmActionPanel {
     dontShowSignLanguage.set(filterConfig.isDontShowSignLanguage());
     dontShowAudioVersions.set(filterConfig.isDontShowAudioVersions());
 
-    loadSavedSenderChecks();
+    // loadSavedSenderChecks();
 
     try {
       double loadedMin = filterConfig.getFilmLengthMin();
@@ -324,7 +329,7 @@ public class FilmActionPanel {
         .selectedItemProperty()
         .addListener(
             ((observable, oldValue, newValue) -> {
-              if (!senderLoading && !themaLoading) {
+              if (!themaLoading) {
                 filterConfig.setThema(newValue);
               }
             }));
@@ -450,9 +455,11 @@ public class FilmActionPanel {
         });
   }
 
-  public void updateThemaBox() {
-    //TODO with this its been shown correctly but its flickering
-    loadSavedSenderChecks();
+  private void updateThemaBox() {
+    if (themaLoading) {
+      return;
+    }
+
     themaLoading = true;
     final var items = themaBox.getItems();
     items.clear();
@@ -552,5 +559,10 @@ public class FilmActionPanel {
             });
 
     return new Scene(toolBar);
+  }
+
+  public void filmlisteLadenFertigCallback() {
+    loadSavedSenderChecks();
+    updateThemaBox();
   }
 }
