@@ -82,6 +82,8 @@ public class FilmActionPanel {
 
   private FXFilmToolBar toolBar;
   private CommonViewSettingsPane viewSettingsPane;
+  private boolean senderLoading = false;
+  private boolean themaLoading = false;
 
   public FilmActionPanel(Daten daten) {
     this.daten = daten;
@@ -206,12 +208,6 @@ public class FilmActionPanel {
     dontShowAudioVersions = viewSettingsPane.cbDontShowAudioVersions.selectedProperty();
 
     senderList = viewSettingsPane.senderBoxNode.senderBox;
-    Daten.getInstance().getListeFilmeNachBlackList().getSenders().addListener((ListChangeListener<String>) changeListener -> loadSavedSenderChecks());
-    senderList.getCheckModel().getCheckedItems().addListener((ListChangeListener<String>) changeListener -> loadSavedSenderChecks());
-    /*senderList
-        .itemsProperty()
-        .addListener(invalidationListener -> loadSavedSenderChecks());*/
-
     viewSettingsPane.senderBoxNode.pauseTransition.setOnFinished(e -> updateThemaBox());
 
     themaBox = viewSettingsPane.themaComboBox;
@@ -224,10 +220,19 @@ public class FilmActionPanel {
   }
 
   private void loadSavedSenderChecks() {
+    LOG.info("Loading the saved senders...");
+    senderLoading = true;
     IndexedCheckModel<String> senderCheckModel = senderList.getCheckModel();
     List<String> loadedSender = filterConfig.getSender();
     senderCheckModel.clearChecks();
     loadedSender.forEach(senderCheckModel::check);
+    senderLoading = false;
+    loadSavedThema();
+  }
+
+  private void loadSavedThema() {
+    LOG.info("Loading the saved thema...");
+    themaBox.getSelectionModel().select(filterConfig.getThema());
   }
 
   private void restoreConfigSettings() {
@@ -245,27 +250,26 @@ public class FilmActionPanel {
     dontShowAudioVersions.set(filterConfig.isDontShowAudioVersions());
 
     loadSavedSenderChecks();
-    themaBox.getSelectionModel().select(filterConfig.getThema());
 
     try {
-        double loadedMin = filterConfig.getFilmLengthMin();
-        if(loadedMin > filmLengthSlider.getHighValue()) {
-            filmLengthSlider.setHighValueChanging(true);
-            filmLengthSlider.setHighValue(filterConfig.getFilmLengthMax());
-            filmLengthSlider.setHighValueChanging(false);
+      double loadedMin = filterConfig.getFilmLengthMin();
+      if (loadedMin > filmLengthSlider.getHighValue()) {
+        filmLengthSlider.setHighValueChanging(true);
+        filmLengthSlider.setHighValue(filterConfig.getFilmLengthMax());
+        filmLengthSlider.setHighValueChanging(false);
 
-            filmLengthSlider.setLowValueChanging(true);
-            filmLengthSlider.setLowValue(loadedMin);
-            filmLengthSlider.setLowValueChanging(false);
-        } else {
-            filmLengthSlider.setLowValueChanging(true);
-            filmLengthSlider.setLowValue(loadedMin);
-            filmLengthSlider.setLowValueChanging(false);
+        filmLengthSlider.setLowValueChanging(true);
+        filmLengthSlider.setLowValue(loadedMin);
+        filmLengthSlider.setLowValueChanging(false);
+      } else {
+        filmLengthSlider.setLowValueChanging(true);
+        filmLengthSlider.setLowValue(loadedMin);
+        filmLengthSlider.setLowValueChanging(false);
 
-            filmLengthSlider.setHighValueChanging(true);
-            filmLengthSlider.setHighValue(filterConfig.getFilmLengthMax());
-            filmLengthSlider.setHighValueChanging(false);
-        }
+        filmLengthSlider.setHighValueChanging(true);
+        filmLengthSlider.setHighValue(filterConfig.getFilmLengthMax());
+        filmLengthSlider.setHighValueChanging(false);
+      }
 
     } catch (Exception exception) {
       LOG.debug(
@@ -310,11 +314,20 @@ public class FilmActionPanel {
         .getCheckedItems()
         .addListener(
             (ListChangeListener<String>)
-                change -> filterConfig.setSender(new ArrayList<String>(change.getList())));
+                change -> {
+                  if (!senderLoading) {
+                    filterConfig.setSender(new ArrayList<>(change.getList()));
+                  }
+                });
     themaBox
         .getSelectionModel()
         .selectedItemProperty()
-        .addListener(((observable, oldValue, newValue) -> filterConfig.setThema(newValue)));
+        .addListener(
+            ((observable, oldValue, newValue) -> {
+              if (!senderLoading && !themaLoading) {
+                filterConfig.setThema(newValue);
+              }
+            }));
 
     filmLengthSlider
         .lowValueProperty()
@@ -438,6 +451,9 @@ public class FilmActionPanel {
   }
 
   public void updateThemaBox() {
+    //TODO with this its been shown correctly but its flickering
+    loadSavedSenderChecks();
+    themaLoading = true;
     final var items = themaBox.getItems();
     items.clear();
     items.add("");
@@ -466,7 +482,8 @@ public class FilmActionPanel {
 
     themaSuggestionProvider.clearSuggestions();
     themaSuggestionProvider.addPossibleSuggestions(items);
-    themaBox.getSelectionModel().select(0);
+    loadSavedThema();
+    themaLoading = false;
   }
 
   private void setupToolBar() {
