@@ -1,5 +1,6 @@
 package mediathek.javafx.filterpanel;
 
+import com.sun.javafx.collections.ObservableListWrapper;
 import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -254,7 +255,8 @@ public class FilmActionPanel {
     dontShowSignLanguage.set(filterConfig.isDontShowSignLanguage());
     dontShowAudioVersions.set(filterConfig.isDontShowAudioVersions());
 
-    // loadSavedSenderChecks();
+    loadSavedSenderChecks();
+    updateThemaBox();
 
     try {
       double loadedMin = filterConfig.getFilmLengthMin();
@@ -320,7 +322,7 @@ public class FilmActionPanel {
         .addListener(
             (ListChangeListener<String>)
                 change -> {
-                  if (!senderLoading) {
+                  if (!senderLoading && !themaLoading) {
                     filterConfig.setSender(new ArrayList<>(change.getList()));
                   }
                 });
@@ -329,7 +331,7 @@ public class FilmActionPanel {
         .selectedItemProperty()
         .addListener(
             ((observable, oldValue, newValue) -> {
-              if (!themaLoading) {
+              if (!themaLoading && !senderLoading) {
                 filterConfig.setThema(newValue);
               }
             }));
@@ -461,36 +463,31 @@ public class FilmActionPanel {
     }
 
     themaLoading = true;
-    final var items = themaBox.getItems();
-    items.clear();
-    items.add("");
-
-    List<String> finalList = new ArrayList<>();
+    List<String> themen = new ArrayList<>();
+    themen.add("");
     List<String> selectedSenders = senderList.getCheckModel().getCheckedItems();
 
     if (selectedSenders.isEmpty()) {
-      final List<String> lst = daten.getListeFilmeNachBlackList().getThemen("");
-      finalList.addAll(lst);
-      lst.clear();
+      themen.addAll(daten.getListeFilmeNachBlackList().getThemen(""));
     } else {
       for (String sender : selectedSenders) {
-        final List<String> lst = daten.getListeFilmeNachBlackList().getThemen(sender);
-        finalList.addAll(lst);
-        lst.clear();
+        themen.addAll(daten.getListeFilmeNachBlackList().getThemen(sender));
       }
     }
-
-    items.addAll(
-        finalList.stream()
-            .distinct()
-            .sorted(GermanStringSorter.getInstance())
-            .collect(Collectors.toList()));
-    finalList.clear();
-
+    themaBox.setItems(
+            FXCollections.observableList(
+            themen.stream()
+                .distinct()
+                .sorted(GermanStringSorter.getInstance())
+                .collect(Collectors.toList())));
     themaSuggestionProvider.clearSuggestions();
-    themaSuggestionProvider.addPossibleSuggestions(items);
+    themaSuggestionProvider.addPossibleSuggestions(themen);
     loadSavedThema();
     themaLoading = false;
+
+    if (!themaBox.getItems().contains(themaBox.getSelectionModel().getSelectedItem())) {
+      themaBox.getSelectionModel().selectFirst();
+    }
   }
 
   private void setupToolBar() {
