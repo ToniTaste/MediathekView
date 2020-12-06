@@ -142,7 +142,7 @@ public class ApplicationConfiguration {
     return ourInstance;
   }
 
-  public static Configuration getConfiguration() {
+  public static XMLConfiguration getConfiguration() {
     return getInstance().config;
   }
 
