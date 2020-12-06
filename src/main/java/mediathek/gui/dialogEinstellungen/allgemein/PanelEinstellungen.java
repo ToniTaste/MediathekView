@@ -61,6 +61,12 @@ public class PanelEinstellungen extends JPanel {
         daten.getMessageBus().publishAsync(new UpdateStateChangedEvent(cbAutomaticUpdateChecks.isSelected()));
     }
 
+    private void livePersistFiltersActionPerformed(ActionEvent event)
+    {
+        ApplicationConfiguration.getConfiguration().setProperty(ApplicationConfiguration.CONFIG_LIVE_PERSIST_FILTERS, livePersistFilters.isSelected());
+        daten.getMessageBus().publishAsync(new UpdateStateChangedEvent(livePersistFilters.isSelected()));
+    }
+
     private void setupDays() {
         jSpinnerDays.setModel(daySpinnerModel);
         ((JSpinner.DefaultEditor) jSpinnerDays.getEditor()).getTextField().setEditable(false);
@@ -141,6 +147,9 @@ public class PanelEinstellungen extends JPanel {
         
         cbAutomaticUpdateChecks.addActionListener(this::cbAutomaticUpdateChecksActionPerformed);
         cbAutomaticUpdateChecks.setSelected(ApplicationConfiguration.getConfiguration().getBoolean(ApplicationConfiguration.CONFIG_AUTOMATIC_UPDATE_CHECK,true));
+
+        livePersistFilters.addActionListener(this::livePersistFiltersActionPerformed);
+        livePersistFilters.setSelected(ApplicationConfiguration.getConfiguration().getBoolean(ApplicationConfiguration.CONFIG_LIVE_PERSIST_FILTERS,true));
     }
 
     @Handler
@@ -237,6 +246,7 @@ public class PanelEinstellungen extends JPanel {
         jCheckBoxTray = new JCheckBox();
         cbUseWikipediaSenderLogos = new JCheckBox();
         cbAutomaticUpdateChecks = new JCheckBox();
+        livePersistFilters = new JCheckBox();
 
         //======== this ========
         setMaximumSize(new Dimension(10, 10));
@@ -472,6 +482,10 @@ public class PanelEinstellungen extends JPanel {
         //---- cbAutomaticUpdateChecks ----
         cbAutomaticUpdateChecks.setText("Programmupdates t\u00e4glich suchen"); //NON-NLS
 
+        // ---- livePersistFilters ----
+        livePersistFilters.setText("Filter sofort speichern"); // NON-NLS
+        livePersistFilters.setToolTipText("<html>Wenn aktiviert werden Änderungen an den Filtern sofort gespeichert.</html>"); //NON-NLS
+
         GroupLayout layout = new GroupLayout(this);
         setLayout(layout);
         layout.setHorizontalGroup(
@@ -488,6 +502,7 @@ public class PanelEinstellungen extends JPanel {
                                 .addComponent(jCheckBoxTray)
                                 .addComponent(cbUseWikipediaSenderLogos)
                                 .addComponent(cbAutomaticUpdateChecks)
+                                .addComponent(livePersistFilters)
                                 .addComponent(jPanel2, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addGap(0, 0, Short.MAX_VALUE)))
                     .addContainerGap())
@@ -511,6 +526,7 @@ public class PanelEinstellungen extends JPanel {
                     .addComponent(cbUseWikipediaSenderLogos)
                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                     .addComponent(cbAutomaticUpdateChecks)
+                    .addComponent(livePersistFilters)
                     .addContainerGap(3, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -530,5 +546,6 @@ public class PanelEinstellungen extends JPanel {
     private JCheckBox jCheckBoxTray;
     private JCheckBox cbUseWikipediaSenderLogos;
     private JCheckBox cbAutomaticUpdateChecks;
+    private JCheckBox livePersistFilters;
     // End of variables declaration//GEN-END:variables
 }

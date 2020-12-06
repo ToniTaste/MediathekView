@@ -1,6 +1,5 @@
 package mediathek.javafx.filterpanel;
 
-import com.sun.javafx.collections.ObservableListWrapper;
 import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
@@ -25,6 +24,7 @@ import mediathek.gui.messages.FilmListWriteStopEvent;
 import mediathek.mainwindow.MediathekGui;
 import mediathek.tool.*;
 import net.engio.mbassy.listener.Handler;
+import org.apache.commons.configuration2.event.ConfigurationEvent;
 import org.controlsfx.control.CheckListView;
 import org.controlsfx.control.IndexedCheckModel;
 import org.controlsfx.control.RangeSlider;
@@ -58,7 +58,7 @@ public class FilmActionPanel {
   private final Tooltip tooltipSearchRegular = new Tooltip("Suche in Beschreibung deaktiviert");
   private final Tooltip bookmarklistSelected = new Tooltip("Alle Filme anzeigen");
   private final Tooltip bookmarklistDeselected = new Tooltip("Gemerkte Filme anzeigen");
-  private final FilterConfiguration filterConfig;
+  private FilterConfiguration filterConfig;
   private final ObservableList<FilterDTO> availableFilters;
   public ReadOnlyStringWrapper roSearchStringProperty = new ReadOnlyStringWrapper();
   public BooleanProperty showOnlyHd;
@@ -85,12 +85,17 @@ public class FilmActionPanel {
   private CommonViewSettingsPane viewSettingsPane;
   private boolean themaLoading = false;
   private boolean senderLoading = false;
+  private CachedFilterConfiguration chachedFilterConfig;
 
   public FilmActionPanel(Daten daten) {
     this.daten = daten;
-    this.filterConfig = new FilterConfiguration();
-
     setupViewSettingsPane();
+    ApplicationConfiguration.getInstance().addEventListener(ConfigurationEvent.SET_PROPERTY,event -> {
+      setFilterConfiguration();
+    });
+    setFilterConfiguration();
+    setupSaveFilterSettingsButton();
+    setupRestoreFilterSettingsButton();
     setupClearCurrentFilterButton();
 
     SwingUtilities.invokeLater(
@@ -105,6 +110,55 @@ public class FilmActionPanel {
     setupAddNewFilterButton();
 
     daten.getMessageBus().subscribe(this);
+  }
+
+  private void setupRestoreFilterSettingsButton() {
+    viewSettingsPane.registerRestoreButtonListener(actionEvent -> {
+        viewSettingsPane.setRestoreButtonDisabled(true);
+        if(chachedFilterConfig != null) {
+          chachedFilterConfig.restore();
+          restoreConfigSettings();
+        }
+    });
+  }
+
+  private void setupSaveFilterSettingsButton() {
+    viewSettingsPane.registerSaveButtonListener(actionEvent ->  {
+      viewSettingsPane.setSaveButtonDisabled(true);
+      if(chachedFilterConfig!=null)
+      {
+        chachedFilterConfig.save();
+      }
+    });
+  }
+
+  private void setFilterConfiguration() {
+    if (isLivePersistence()) {
+      this.filterConfig = new FilterConfiguration();
+      viewSettingsPane.setRestoreButtonDisabled(true);
+      viewSettingsPane.setSaveButtonDisabled(true);
+      viewSettingsPane.setRestoreButtonVisibility(false);
+      viewSettingsPane.setSaveButtonVisibility(false);
+    } else {
+      this.chachedFilterConfig = new CachedFilterConfiguration();
+      this.filterConfig = chachedFilterConfig;
+      viewSettingsPane.setRestoreButtonDisabled(true);
+      viewSettingsPane.setSaveButtonDisabled(true);
+      viewSettingsPane.setRestoreButtonVisibility(true);
+      viewSettingsPane.setSaveButtonVisibility(true);
+      setupCachedFilterConfigListener();
+    }
+  }
+
+  private void setupCachedFilterConfigListener() {
+    this.chachedFilterConfig.registerEventListener(configurationEvent -> {
+      viewSettingsPane.setSaveButtonDisabled(false);
+      viewSettingsPane.setRestoreButtonDisabled(false);
+    });
+  }
+
+  private boolean isLivePersistence() {
+    return ApplicationConfiguration.getConfiguration().getBoolean(ApplicationConfiguration.CONFIG_LIVE_PERSIST_FILTERS,true);
   }
 
   private void setupAddNewFilterButton() {
@@ -563,3 +617,4 @@ public class FilmActionPanel {
     updateThemaBox();
   }
 }
+
